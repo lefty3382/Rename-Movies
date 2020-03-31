@@ -1,4 +1,6 @@
-﻿$VerbosePreference = "Continue"
+﻿#ScriptVersion = "1.0.0.1"
+
+$VerbosePreference = "Continue"
 $Server = "192.168.0.64"
 $DownloadsDirectory = "\\$Server\storage\Film\_New\_Movies\"
 $YearRegex = "[1|2][9|0][0-9][0-9]"
@@ -6,7 +8,7 @@ $ParenYearRegex = "^[(][1|2][9|0][0-9][0-9][)]$"
 $OriginalNameRegex = "[ ][(][1|2][9|0][0-9][0-9][)]$"
 
 #Get all subfolders from target folder
-foreach ($MovieFolder in (gci $DownloadsDirectory))
+foreach ($MovieFolder in (Get-ChildItem $DownloadsDirectory))
 {
     Write-Output "------------------"
     Write-Output "Folder: $($MovieFolder.name)"
@@ -129,7 +131,7 @@ foreach ($MovieFolder in (gci $DownloadsDirectory))
     $MovieChildItems = Get-ChildItem -LiteralPath $MovieFolder.FullName
     foreach ($MovieChildItem in $MovieChildItems)
     {
-        Write-Output "Parsing item `"$($MovieChildItem.name)`""
+        Write-Output "Parsing item: `"$($MovieChildItem.name)`""
         if ($MovieChildItem.PSIsContainer -eq $false)
         {
             #Delete .TXT .EXE .NFO files
