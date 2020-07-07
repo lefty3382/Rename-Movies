@@ -1,11 +1,24 @@
-﻿#ScriptVersion = "1.0.0.1"
+﻿[CmdletBinding()]
+param (
+    [Parameter(
+        Mandatory = $false,
+        Position = 0
+    )]
+    [string]$DownloadsDirectory
+)
+
+#ScriptVersion = "1.0.1.0"
 
 $VerbosePreference = "Continue"
 $Server = "192.168.0.64"
-$DownloadsDirectory = "\\$Server\storage\Film\_New\_Movies\"
 $YearRegex = "[1|2][9|0][0-9][0-9]"
 $ParenYearRegex = "^[(][1|2][9|0][0-9][0-9][)]$"
 $OriginalNameRegex = "[ ][(][1|2][9|0][0-9][0-9][)]$"
+
+if (!$DownloadsDirectory)
+{
+    $DownloadsDirectory = "\\$Server\storage\Film\_New\_Movies\"
+}
 
 #Get all subfolders from target folder
 foreach ($MovieFolder in (Get-ChildItem $DownloadsDirectory))
