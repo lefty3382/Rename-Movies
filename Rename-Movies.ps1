@@ -7,9 +7,9 @@ param (
     [string]$DownloadsDirectory
 )
 
-#ScriptVersion = "1.0.1.0"
+#ScriptVersion = "1.0.1.1"
 
-$VerbosePreference = "Continue"
+#$VerbosePreference = "Continue"
 $Server = "192.168.0.64"
 $YearRegex = "[1|2][9|0][0-9][0-9]"
 $ParenYearRegex = "^[(][1|2][9|0][0-9][0-9][)]$"
@@ -27,10 +27,8 @@ foreach ($MovieFolder in (Get-ChildItem $DownloadsDirectory))
     Write-Output "Folder: $($MovieFolder.name)"
     
     #Set variables to empty
-    $TempFileName = ""
     $TempFolderName = ""
     $FolderSplit = @()
-    $FileSplit = @()
     $NewName = ""
     $Element = ""
     $Year = ""
@@ -44,6 +42,7 @@ foreach ($MovieFolder in (Get-ChildItem $DownloadsDirectory))
         ($MovieFolder.Name -notlike "*BluRay*") -and
         ($MovieFolder.Name -notlike "*WEBrip*") -and
         ($MovieFolder.Name -notlike "*H264*") -and
+        ($MovieFolder.Name -notlike "*x265*") -and
         ($MovieFolder.Name -notlike "*RARBG*") -and
         ($MovieFolder.Name -notlike "*AMZN*"))
     {
