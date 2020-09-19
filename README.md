@@ -29,5 +29,5 @@ The script will take the string "American.Pastime.2007.1080p.WEBRip.x265-EXAMPLE
 The script will rename the parent folder, the .MP4 and .SRT files to match the new string, moving the .SRT file to the directory above the Subs folder.  It will then delete the .NFO and .TXT files and delete the Subs folder, leaving you with the below folder/file structure.
 
 * American Pastime (2007)
-** American Pastime (2007).mp4
-** American Pastime (2007).srt
+  * American Pastime (2007).mp4
+  * American Pastime (2007).srt
