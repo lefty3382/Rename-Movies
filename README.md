@@ -15,12 +15,12 @@ A local or network directory containing movie files, each movie file(s) is expec
 
 This example assumes the following directory structure under "D:\MovieDownloads".
 
-⋅ D:\MovieDownloads\American.Pastime.2007.1080p.WEBRip.x265-EXAMPLE
-⋅⋅ D:\MovieDownloads\American.Pastime.2007.1080p.WEBRip.x265-EXAMPLE\American.Pastime.2007.1080p.WEBRip.x265-EXAMPLE.mp4
-⋅⋅ D:\MovieDownloads\American.Pastime.2007.1080p.WEBRip.x265-EXAMPLE\American.Pastime.2007.1080p.WEBRip.x265-EXAMPLE.nfo
-⋅⋅ D:\MovieDownloads\American.Pastime.2007.1080p.WEBRip.x265-EXAMPLE\American.Pastime.2007.1080p.WEBRip.x265-EXAMPLE.txt
-⋅⋅ D:\MovieDownloads\American.Pastime.2007.1080p.WEBRip.x265-EXAMPLE\Subs
-⋅⋅⋅ D:\MovieDownloads\American.Pastime.2007.1080p.WEBRip.x265-EXAMPLE\Subs\American.Pastime.2007.1080p.WEBRip.x265-EXAMPLE.srt
+-- D:\MovieDownloads\American.Pastime.2007.1080p.WEBRip.x265-EXAMPLE
+--|-- D:\MovieDownloads\American.Pastime.2007.1080p.WEBRip.x265-EXAMPLE\American.Pastime.2007.1080p.WEBRip.x265-EXAMPLE.mp4
+--|-- D:\MovieDownloads\American.Pastime.2007.1080p.WEBRip.x265-EXAMPLE\American.Pastime.2007.1080p.WEBRip.x265-EXAMPLE.nfo
+--|-- D:\MovieDownloads\American.Pastime.2007.1080p.WEBRip.x265-EXAMPLE\American.Pastime.2007.1080p.WEBRip.x265-EXAMPLE.txt
+--|-- D:\MovieDownloads\American.Pastime.2007.1080p.WEBRip.x265-EXAMPLE\Subs
+--|--|-- D:\MovieDownloads\American.Pastime.2007.1080p.WEBRip.x265-EXAMPLE\Subs\American.Pastime.2007.1080p.WEBRip.x265-EXAMPLE.srt
 
 
 The script will take the string "American.Pastime.2007.1080p.WEBRip.x265-EXAMPLE" from the parent folder containing the movie files and identify the string (2007) as the string matching a valid year.  All characters after the year, in this case ".1080p.WEBRip.x265-EXAMPLE" are removed.  The script then replaces all dots (".") with spaces and places the year in parenthesis.  The final movie string result is "American Pastime (2007)".
