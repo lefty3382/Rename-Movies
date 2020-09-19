@@ -23,11 +23,11 @@ This example assumes the following directory structure under "D:\MovieDownloads"
     * D:\MovieDownloads\American.Pastime.2007.1080p.WEBRip.x265-EXAMPLE\Subs\American.Pastime.2007.1080p.WEBRip.x265-EXAMPLE.srt
 
 
-The script will take the string "American.Pastime.2007.1080p.WEBRip.x265-EXAMPLE" from the parent folder containing the movie files and identify the string (2007) as the string matching a valid year.  All characters after the year, in this case ".1080p.WEBRip.x265-EXAMPLE" are removed.  The script then replaces all dots (".") with spaces and places the year in parenthesis.  The final movie string result is "American Pastime (2007)".
+The script will take the string "American.Pastime.2007.1080p.WEBRip.x265-EXAMPLE" from the parent folder containing the movie files and identify the string (2007) as the string matching a valid year.  All characters after the year, in this case ".1080p.WEBRip.x265-EXAMPLE" are removed.  The script then replaces all dots (".") with spaces and places the year in parenthesis.  The final movie string result is: **_"American Pastime (2007)"_**.
 
 
 The script will rename the parent folder, the .MP4 and .SRT files to match the new string, moving the .SRT file to the directory above the Subs folder.  It will then delete the .NFO and .TXT files and delete the Subs folder, leaving you with the below folder/file structure.
 
-* American Pastime (2007)
-  * American Pastime (2007).mp4
-  * American Pastime (2007).srt
+* D:\MovieDownloads\American Pastime (2007)
+  * D:\MovieDownloads\American Pastime (2007).mp4
+  * D:\MovieDownloads\American Pastime (2007).srt
