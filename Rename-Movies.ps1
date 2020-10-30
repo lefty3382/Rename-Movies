@@ -1,17 +1,36 @@
-﻿[CmdletBinding()]
+﻿<#	
+	.NOTES
+	===========================================================================
+	 Created with: 	Visual Studio Code 1.47.2
+	 Created on:   	12/08/2019 11:09 AM
+	 Created by:   	Jason Witters
+	 Organization: 	Witters Inc.
+	 Filename:     	Rename-Movies.ps1
+	===========================================================================
+	.DESCRIPTION
+		Rename downloaded movie files and folders.
+#>
+
+[CmdletBinding()]
 param (
     [Parameter(
         Mandatory = $false,
         Position = 0
     )]
-    [string]$DownloadsDirectory
+    [string]$DownloadsDirectory,
+    # Test switch, no changes enforced but all console output is displayed
+    [Parameter(
+        Mandatory = $false,
+        Position = 1
+    )]
+    [switch]$Test = $false
 )
 
-#ScriptVersion = "1.0.1.1"
+#ScriptVersion = "1.0.2.0"
 
 #$VerbosePreference = "Continue"
 $Server = "192.168.0.64"
-$YearRegex = "[1|2][9|0][0-9][0-9]"
+$YearRegex = "^[1|2][9|0][0-9][0-9]$"
 $ParenYearRegex = "^[(][1|2][9|0][0-9][0-9][)]$"
 $OriginalNameRegex = "[ ][(][1|2][9|0][0-9][0-9][)]$"
 
@@ -46,28 +65,8 @@ foreach ($MovieFolder in (Get-ChildItem $DownloadsDirectory))
         ($MovieFolder.Name -notlike "*RARBG*") -and
         ($MovieFolder.Name -notlike "*AMZN*"))
     {
-        Write-Output "Folder already appears to be renamed"
-        Write-Output "Validating file names..."
-
-        #If movie title starts with "The", move to end of new title name
-        if ($FolderSplit[0] -eq "The")
-        {
-            Write-Output "Movie folder name starts with `"The`""
-            $ok = $true
-            for ($i=1; $i -lt ($FolderSplit.Count-1); $i++)
-            {
-                $NewName += $FolderSplit[$i] + " "
-            }
-            $NewName = $NewName.TrimEnd(" ")
-            $NewName += ", The "
-            $NewName += $FolderSplit[-1]
-            Write-Output "NewName: $NewName"
-        }
-        else
-        {
-            Write-Warning "Folder appears to already be renamed, moving on..."
-            continue
-        }
+        Write-Warning "Folder appears to already be renamed, moving on..."
+        continue
     }
     else
     {
@@ -80,54 +79,51 @@ foreach ($MovieFolder in (Get-ChildItem $DownloadsDirectory))
 
         foreach ($string in $FolderSplit)
         { 
-            if ($ok -eq $false)
+            Write-Verbose "Parsing string: $string"
+            Write-Verbose "Matching `"$string`" to year regex expression `"$YearRegex`""
+            if ($string -match $YearRegex)
             {
-                Write-Verbose "Parsing string: $string"
-                Write-Verbose "Matching `"$string`" to year regex expression `"$YearRegex`""
-                if ($string -match $YearRegex)
+                Write-Verbose "String `"$string`" matches regex `"$YearRegex`""
+                if ($string -match $ParenYearRegex)
                 {
-                    Write-Verbose "String `"$string`" matches regex `"$YearRegex`""
-                    if ($string -match $ParenYearRegex)
-                    {
-                        Write-Verbose "String `"$string`" matches regex `"$ParenYearRegex`""
-                        $Year = $string
-                    }
-                    else
-                    {
-                        #Remove all non-digit characters from string, add parentheses
-                        $Year = $string -replace '[\D]', ''
-                        $Year = $Year -replace "$Year", "($Year)"
-                    }
-
-                    Write-Verbose "Final year string: $year"
-                    $ok = $true
-                    $Element = [array]::indexof($FolderSplit,$string)
-
-                    #If movie title starts with "The", move to end of new title name
-                    if ($FolderSplit[0] -eq "The")
-                    {
-                        for ($i=1; $i -lt $element; $i++)
-                        {
-                            $NewName += $FolderSplit[$i] + " "
-                        }
-                        $NewName = $NewName.TrimEnd(" ")
-                        $NewName += ", The "
-                        $NewName += $Year
-                    }
-                    else
-                    {
-                        for ($i=0; $i -lt $element; $i++)
-                        {
-                            $NewName += $FolderSplit[$i] + " "
-                        }
-                        $NewName += $Year
-                    }
-                    Write-Verbose "NewName: $NewName"
+                    Write-Verbose "String `"$string`" matches regex `"$ParenYearRegex`""
+                    $Year = $string
                 }
                 else
                 {
-                    Write-Verbose "String `"$string`" does NOT match regex `"$YearRegex`""
+                    #Remove all non-digit characters from string, add parentheses
+                    $Year = $string -replace '[\D]', ''
+                    $Year = $Year -replace "$Year", "($Year)"
                 }
+
+                Write-Verbose "Final year string: $year"
+                $ok = $true
+                $Element = [array]::indexof($FolderSplit,$string)
+
+                #If movie title starts with "The", move to end of new title name
+                if ($FolderSplit[0] -eq "The")
+                {
+                    for ($i=1; $i -lt $element; $i++)
+                    {
+                        $NewName += $FolderSplit[$i] + " "
+                    }
+                    $NewName = $NewName.TrimEnd(" ")
+                    $NewName += ", The "
+                }
+                else
+                {
+                    for ($i=0; $i -lt $element; $i++)
+                    {
+                        $NewName += $FolderSplit[$i] + " "
+                    }
+                }
+                $NewName += $Year
+                $NewName = $NewName -creplace ("Of","of")
+                Write-Verbose "NewName: $NewName"
+            }
+            else
+            {
+                Write-Verbose "String `"$string`" does NOT match regex `"$YearRegex`""
             }
         }
     }
@@ -154,7 +150,7 @@ foreach ($MovieFolder in (Get-ChildItem $DownloadsDirectory))
                 Write-Output "Removing file: `"$($MovieChildItem.name)`""
                 try
                 {
-                    Remove-Item -LiteralPath $MovieChildItem.fullname -Force -ErrorAction Stop
+                    Remove-Item -LiteralPath $MovieChildItem.fullname -Force -ErrorAction Stop -WhatIf:$Test
                     Write-Output "Successfully removed file: `"$($MovieChildItem.name)`""
                 }
                 catch
@@ -178,7 +174,7 @@ foreach ($MovieFolder in (Get-ChildItem $DownloadsDirectory))
                 Write-Output "New file name: $NewSubItemName"
                 try
                 {
-                    Rename-Item -LiteralPath $MovieChildItem.fullname -NewName $NewSubItemName -ErrorAction Stop
+                    Rename-Item -LiteralPath $MovieChildItem.fullname -NewName $NewSubItemName -ErrorAction Stop -WhatIf:$Test
                     Write-Output "Successfully renamed file: `"$($MovieChildItem.name)`""
                 }
                 catch
@@ -196,7 +192,7 @@ foreach ($MovieFolder in (Get-ChildItem $DownloadsDirectory))
                         $NewFullPath = Join-Path -Path $MovieChildItem.DirectoryName -ChildPath $NewSubItemName
                         try
                         {
-                            Move-Item -LiteralPath $MovieChildItem.fullname -Destination $NewFullPath -ErrorAction Stop
+                            Move-Item -LiteralPath $MovieChildItem.fullname -Destination $NewFullPath -ErrorAction Stop -WhatIf:$Test
                             Write-Output "Successfully renamed file: `"$($MovieChildItem.name)`""
                         }
                         catch
@@ -231,21 +227,21 @@ foreach ($MovieFolder in (Get-ChildItem $DownloadsDirectory))
                                 $NewSubtitleFileName = $SubtitleFile.Name.Replace($SubtitleFile.Name,$NewName)
                                 Write-Output "Moving sub file to movie folder: `"$($SubtitleFile.Name)`""
                                 Write-Output "New path: $($MovieFolder.fullname)\$NewSubtitleFileName.$Ext"
-                                Move-Item -LiteralPath $SubtitleFile.fullname -Destination "$($MovieFolder.fullname)\$NewSubtitleFileName.$Ext"
+                                Move-Item -LiteralPath $SubtitleFile.fullname -Destination "$($MovieFolder.fullname)\$NewSubtitleFileName.$Ext" -WhatIf:$Test
                                 $SRTDone = $true
                             }
                             else
                             {
                                 Write-Output "Duplicate English .SRT sub file found"
                                 Write-Output "Removing subtitle file: `"$($SubtitleFile.Name)`""
-                                Remove-Item -LiteralPath $SubtitleFile.FullName -Force
+                                Remove-Item -LiteralPath $SubtitleFile.FullName -Force -WhatIf:$Test
                             }
                         }
                         else
                         {
                             Write-Output "Sub file: `"$($SubtitleFile.FullName)`""
                             Write-Output "Sub file name does not contain ENG string, so we delete it"
-                            Remove-Item -LiteralPath $SubtitleFile.FullName -Force
+                            Remove-Item -LiteralPath $SubtitleFile.FullName -Force -WhatIf:$Test
                         }
                     }
                     else
@@ -253,17 +249,17 @@ foreach ($MovieFolder in (Get-ChildItem $DownloadsDirectory))
                         $NewSubtitleFileName = $SubtitleFile.Name.Replace($SubtitleFile.Name,$NewName)
                         Write-Output "Moving subtitle file: `"$($SubtitleFile.FullName)`""
                         Write-Output "New path: $($MovieFolder.fullname)\$NewSubtitleFileName.$Ext"
-                        Move-Item -LiteralPath $SubtitleFile.fullname -Destination "$($MovieFolder.fullname)\$NewSubtitleFileName.$Ext"
+                        Move-Item -LiteralPath $SubtitleFile.fullname -Destination "$($MovieFolder.fullname)\$NewSubtitleFileName.$Ext" -WhatIf:$Test
                     }
                 }
                 #Delete Subs folder
                 Write-Output "Removing folder: `"$($MovieChildItem.FullName)`" folder"
-                Remove-Item -LiteralPath $MovieChildItem.FullName -Recurse -Force
+                Remove-Item -LiteralPath $MovieChildItem.FullName -Recurse -Force -WhatIf:$Test
             }
             else
             {
                 Write-Output "Removing folder: `"$($MovieChildItem.FullName)`" folder"
-                Remove-Item -LiteralPath $MovieChildItem.FullName -Recurse -Force
+                Remove-Item -LiteralPath $MovieChildItem.FullName -Recurse -Force -WhatIf:$Test
             }
         }
     }
@@ -273,7 +269,7 @@ foreach ($MovieFolder in (Get-ChildItem $DownloadsDirectory))
     Write-Output "New folder name: `"$NewName`""
     try
     {
-        Rename-Item -LiteralPath $MovieFolder.FullName -NewName $NewName -ErrorAction Stop
+        Rename-Item -LiteralPath $MovieFolder.FullName -NewName $NewName -ErrorAction Stop -WhatIf:$Test
         Write-Output "Successfully renamed movie folder"
     }
     catch
