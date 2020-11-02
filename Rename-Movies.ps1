@@ -26,18 +26,116 @@ param (
     [switch]$Test = $false
 )
 
-#ScriptVersion = "1.0.2.0"
+#ScriptVersion = "1.0.3.0"
+
+###################################
+# Script Variables
+###################################
 
 #$VerbosePreference = "Continue"
 $Server = "192.168.0.64"
 $YearRegex = "^[1|2][9|0][0-9][0-9]$"
-$ParenYearRegex = "^[(][1|2][9|0][0-9][0-9][)]$"
+#$ParenYearRegex = "^[(][1|2][9|0][0-9][0-9][)]$"
 $OriginalNameRegex = "[ ][(][1|2][9|0][0-9][0-9][)]$"
+$AfterYearRegex = "^1080p|2160p|REMASTERED|UNRATED|EXTENDED|DC|SHOUT|UNCUT|Colorized|DUBBED|FS|WS$"
 
 if (!$DownloadsDirectory)
 {
     $DownloadsDirectory = "\\$Server\storage\Film\_New\_Movies\"
 }
+
+###################################
+# Script Functions
+###################################
+
+function Get-NewMovieName {
+    [CmdletBinding()]
+    param (
+        [Parameter(
+        Mandatory = $true,
+        Position = 0
+    )]
+    [string]$OriginalMovieString
+    )
+    
+    begin
+    {
+        # Replace dots and brackets with spaces, then split into array
+        $TempFolderName = $OriginalMovieString
+        $TempFolderName = $TempFolderName.replace('.',' ')
+        $TempFolderName = $TempFolderName.replace('[','')
+        $TempFolderName = $TempFolderName.replace(']','')
+        $FolderSplit = $TempFolderName.split(' ')
+    }
+    
+    process
+    {
+        # Find movie year, keep only what's before
+        for ($a=0; $a -lt $FolderSplit.count; $a++)
+        { 
+            $CurrentString = $FolderSplit[$a]
+            Write-Verbose "Parsing string: $CurrentString"
+            Write-Verbose "Matching `"$CurrentString`" to year regex expression `"$YearRegex`""
+            if ($CurrentString -match $YearRegex)
+            {
+                Write-Verbose "String `"$CurrentString`" matches regex `"$YearRegex`""
+                
+                # Check for expected string after year
+                if ($FolderSplit[$a+1] -match $AfterYearRegex)
+                {
+                    Write-Verbose "Found expected string after identified year: $($FolderSplit[$a+1])"
+                    
+                    #Remove all non-digit characters from string, add parentheses
+                    $Year = $CurrentString -replace '[\D]', ''
+                    $Year = $Year -replace "$Year", "($Year)"
+
+                    Write-Verbose "Final year string: $year"
+                    $Element = [array]::indexof($FolderSplit,$CurrentString)
+
+                    #If movie title starts with "The", move to end of new title name
+                    if ($FolderSplit[0] -eq "The")
+                    {
+                        for ($i=1; $i -lt $element; $i++)
+                        {
+                            $NewName += $FolderSplit[$i] + " "
+                        }
+                        $NewName = $NewName.TrimEnd(" ")
+                        $NewName += ", The "
+                    }
+                    else
+                    {
+                        for ($i=0; $i -lt $element; $i++)
+                        {
+                            $NewName += $FolderSplit[$i] + " "
+                        }
+                    }
+                    $NewName += $Year
+                    $NewName = $NewName -creplace ("Of","of")
+                    Write-Verbose "NewName: $NewName"
+                    $a=100
+                }
+                else
+                {
+                    Write-Verbose "Did NOT find expected string after identified year: $($FolderSplit[$a+1])"
+                    Write-Verbose "Continuing to parse through movie folder name"
+                }
+            }
+            else
+            {
+                Write-Verbose "String `"$CurrentString`" does NOT match regex `"$YearRegex`""
+            }
+        }
+    }
+    
+    end
+    {
+        return $NewName
+    }
+}
+
+###################################
+# Main
+###################################
 
 #Get all subfolders from target folder
 foreach ($MovieFolder in (Get-ChildItem $DownloadsDirectory))
@@ -52,10 +150,10 @@ foreach ($MovieFolder in (Get-ChildItem $DownloadsDirectory))
     $Element = ""
     $Year = ""
     $SRTDone = $false
-    $ok = $false
 
     #Validate movie folder is not already renamed
     if (($MovieFolder.Name -match $OriginalNameRegex) -and
+        ($MovieFolder.Name -notlike "*2160p*") -and
         ($MovieFolder.Name -notlike "*1080p*") -and
         ($MovieFolder.Name -notlike "*720p*") -and
         ($MovieFolder.Name -notlike "*BluRay*") -and
@@ -63,6 +161,9 @@ foreach ($MovieFolder in (Get-ChildItem $DownloadsDirectory))
         ($MovieFolder.Name -notlike "*H264*") -and
         ($MovieFolder.Name -notlike "*x265*") -and
         ($MovieFolder.Name -notlike "*RARBG*") -and
+        ($MovieFolder.Name -notlike "*HULU*") -and
+        ($MovieFolder.Name -notlike "*DSNP*") -and
+        ($MovieFolder.Name -notlike "*ATVP*") -and
         ($MovieFolder.Name -notlike "*AMZN*"))
     {
         Write-Warning "Folder appears to already be renamed, moving on..."
@@ -70,69 +171,18 @@ foreach ($MovieFolder in (Get-ChildItem $DownloadsDirectory))
     }
     else
     {
-        #Determine new name from existing parent folder name
-        $TempFolderName = $MovieFolder.name
-        $TempFolderName = $TempFolderName.replace('.',' ')
-        $TempFolderName = $TempFolderName.replace('[','')
-        $TempFolderName = $TempFolderName.replace(']','')
-        $FolderSplit = $TempFolderName.split(' ')
-
-        foreach ($string in $FolderSplit)
-        { 
-            Write-Verbose "Parsing string: $string"
-            Write-Verbose "Matching `"$string`" to year regex expression `"$YearRegex`""
-            if ($string -match $YearRegex)
-            {
-                Write-Verbose "String `"$string`" matches regex `"$YearRegex`""
-                if ($string -match $ParenYearRegex)
-                {
-                    Write-Verbose "String `"$string`" matches regex `"$ParenYearRegex`""
-                    $Year = $string
-                }
-                else
-                {
-                    #Remove all non-digit characters from string, add parentheses
-                    $Year = $string -replace '[\D]', ''
-                    $Year = $Year -replace "$Year", "($Year)"
-                }
-
-                Write-Verbose "Final year string: $year"
-                $ok = $true
-                $Element = [array]::indexof($FolderSplit,$string)
-
-                #If movie title starts with "The", move to end of new title name
-                if ($FolderSplit[0] -eq "The")
-                {
-                    for ($i=1; $i -lt $element; $i++)
-                    {
-                        $NewName += $FolderSplit[$i] + " "
-                    }
-                    $NewName = $NewName.TrimEnd(" ")
-                    $NewName += ", The "
-                }
-                else
-                {
-                    for ($i=0; $i -lt $element; $i++)
-                    {
-                        $NewName += $FolderSplit[$i] + " "
-                    }
-                }
-                $NewName += $Year
-                $NewName = $NewName -creplace ("Of","of")
-                Write-Verbose "NewName: $NewName"
-            }
-            else
-            {
-                Write-Verbose "String `"$string`" does NOT match regex `"$YearRegex`""
-            }
+        try
+        {
+            $NewName = Get-NewMovieName -OriginalMovieString $MovieFolder.Name -ErrorAction Stop
+            Write-Output "Final movie name: $NewName"
         }
-    }
-
-    #Continue if new name exists, else skip to next loop
-    If ($ok -eq $false)
-    {
-        Write-Warning "Year could not be parsed from folder name, skipping"
-        continue
+        catch
+        {
+            Write-Warning "New movie name could not be determined"
+            $Answer = Read-Host "Continue?"
+            if ($Answer -match [Yy]) { Continue }
+            else { exit }
+        }
     }
 
     #Get child items in target folder
