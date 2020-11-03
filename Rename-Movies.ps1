@@ -26,7 +26,7 @@ param (
     [switch]$Test = $false
 )
 
-#ScriptVersion = "1.0.3.0"
+#ScriptVersion = "1.0.4.0"
 
 ###################################
 # Script Variables
@@ -109,8 +109,15 @@ function Get-NewMovieName {
                             $NewName += $FolderSplit[$i] + " "
                         }
                     }
+                    # Add year to end of new string
                     $NewName += $Year
-                    $NewName = $NewName -creplace ("Of","of")
+
+                    # Fix common issues
+                    $NewName = $NewName -creplace (" Of "," of ")
+                    $NewName = $NewName -replace (" Mr "," Mr. ")
+                    $NewName = $NewName -replace (" Mrs "," Mrs. ")
+                    $NewName = $NewName -replace ("Mr ","Mr. ")
+                    $NewName = $NewName -replace ("Mrs ","Mrs. ")
                     Write-Verbose "NewName: $NewName"
                     $a=100
                 }
