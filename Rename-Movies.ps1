@@ -26,7 +26,7 @@ param (
     [switch]$Test = $false
 )
 
-#ScriptVersion = "1.0.4.0"
+#ScriptVersion = "1.0.5.0"
 
 ###################################
 # Script Variables
@@ -37,7 +37,7 @@ $Server = "192.168.0.64"
 $YearRegex = "^[1|2][9|0][0-9][0-9]$"
 #$ParenYearRegex = "^[(][1|2][9|0][0-9][0-9][)]$"
 $OriginalNameRegex = "[ ][(][1|2][9|0][0-9][0-9][)]$"
-$AfterYearRegex = "^1080p|2160p|REMASTERED|UNRATED|EXTENDED|DC|SHOUT|UNCUT|Colorized|DUBBED|FS|WS$"
+$AfterYearRegex = "^1080p|2160p|IMAX|REMASTERED|UNRATED|EXTENDED|DC|SHOUT|UNCUT|Colorized|DUBBED|FS|WS$"
 
 if (!$DownloadsDirectory)
 {
@@ -158,7 +158,7 @@ foreach ($MovieFolder in (Get-ChildItem $DownloadsDirectory))
     $Year = ""
     $SRTDone = $false
 
-    #Validate movie folder is not already renamed
+    # Get new movie folder name if not already renamed
     if (($MovieFolder.Name -match $OriginalNameRegex) -and
         ($MovieFolder.Name -notlike "*2160p*") -and
         ($MovieFolder.Name -notlike "*1080p*") -and
@@ -190,6 +190,13 @@ foreach ($MovieFolder in (Get-ChildItem $DownloadsDirectory))
             if ($Answer -match [Yy]) { Continue }
             else { exit }
         }
+    }
+
+    $NewFolderName = $NewName
+    # If 4K movie, add 4K to end of new name for files
+    if ($MovieFolder.Name -like "*.2160p.*")
+    {
+        $NewName = $NewName + " - 4K"
     }
 
     #Get child items in target folder
@@ -320,13 +327,12 @@ foreach ($MovieFolder in (Get-ChildItem $DownloadsDirectory))
             }
         }
     }
-
     #Rename target folder
     Write-Output "Renaming folder: `"$($MovieFolder.Name)`""
-    Write-Output "New folder name: `"$NewName`""
+    Write-Output "New folder name: `"$NewFolderName`""
     try
     {
-        Rename-Item -LiteralPath $MovieFolder.FullName -NewName $NewName -ErrorAction Stop -WhatIf:$Test
+        Rename-Item -LiteralPath $MovieFolder.FullName -NewName $NewFolderName -ErrorAction Stop -WhatIf:$Test
         Write-Output "Successfully renamed movie folder"
     }
     catch
