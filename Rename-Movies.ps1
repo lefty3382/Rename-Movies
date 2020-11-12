@@ -15,34 +15,26 @@
 param (
     [Parameter(
         Mandatory = $false,
-        Position = 0
-    )]
-    [string]$DownloadsDirectory,
+        Position = 0)]
+    [ValidatePattern("(?i)^(Z:|\\\\192\.168\.0\.64\\storage)\\Film\\_New")]
+    [string]$DownloadsDirectory = "\\192.168.0.64\storage\Film\_New\",
+
     # Test switch, no changes enforced but all console output is displayed
     [Parameter(
         Mandatory = $false,
-        Position = 1
-    )]
+        Position = 1)]
     [switch]$Test = $false
 )
 
-#ScriptVersion = "1.0.5.0"
+#ScriptVersion = "1.0.6.0"
 
 ###################################
 # Script Variables
 ###################################
 
-#$VerbosePreference = "Continue"
-$Server = "192.168.0.64"
 $YearRegex = "^[1|2][9|0][0-9][0-9]$"
-#$ParenYearRegex = "^[(][1|2][9|0][0-9][0-9][)]$"
 $OriginalNameRegex = "[ ][(][1|2][9|0][0-9][0-9][)]$"
 $AfterYearRegex = "^1080p|2160p|IMAX|REMASTERED|UNRATED|EXTENDED|DC|SHOUT|UNCUT|Colorized|DUBBED|FS|WS$"
-
-if (!$DownloadsDirectory)
-{
-    $DownloadsDirectory = "\\$Server\storage\Film\_New\_Movies\"
-}
 
 ###################################
 # Script Functions
