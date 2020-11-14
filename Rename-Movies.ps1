@@ -16,7 +16,8 @@ param (
     [Parameter(
         Mandatory = $false,
         Position = 0)]
-    [ValidatePattern("(?i)^(Z:|\\\\192\.168\.0\.64\\storage)\\Film\\_New")]
+    #[ValidatePattern("(?i)^(Z:|\\\\192\.168\.0\.64\\storage)\\Film\\_New\\.{1,200}$")]
+    [ValidateScript({(Get-ChildItem "\\192.168.0.64\storage\Film\_New" | Select-Object -ExpandProperty FullName) -contains $_})]
     [string]$DownloadsDirectory = "\\192.168.0.64\storage\Film\_New\",
 
     # Test switch, no changes enforced but all console output is displayed
@@ -26,7 +27,7 @@ param (
     [switch]$Test = $false
 )
 
-#ScriptVersion = "1.0.6.0"
+#ScriptVersion = "1.0.6.2"
 
 ###################################
 # Script Variables
@@ -62,68 +63,83 @@ function Get-NewMovieName {
     
     process
     {
-        # Find movie year, keep only what's before
+        # Find release year in movie title string
         for ($a=0; $a -lt $FolderSplit.count; $a++)
         { 
             $CurrentString = $FolderSplit[$a]
-            Write-Verbose "Parsing string: $CurrentString"
-            Write-Verbose "Matching `"$CurrentString`" to year regex expression `"$YearRegex`""
+            Write-Host "Parsing string: $CurrentString" -ForegroundColor Yellow
+            Write-Host "Matching `"$CurrentString`" to year regex expression `"$YearRegex`"" -ForegroundColor Yellow
             if ($CurrentString -match $YearRegex)
             {
-                Write-Verbose "String `"$CurrentString`" matches regex `"$YearRegex`""
-                
+                Write-Host "String `"$CurrentString`" matches regex `"$YearRegex`"" -ForegroundColor Green
+                $ProvisionalYearMatch = $CurrentString
                 # Check for expected string after year
                 if ($FolderSplit[$a+1] -match $AfterYearRegex)
                 {
-                    Write-Verbose "Found expected string after identified year: $($FolderSplit[$a+1])"
-                    
-                    #Remove all non-digit characters from string, add parentheses
-                    $Year = $CurrentString -replace '[\D]', ''
-                    $Year = $Year -replace "$Year", "($Year)"
-
-                    Write-Verbose "Final year string: $year"
-                    $Element = [array]::indexof($FolderSplit,$CurrentString)
-
-                    #If movie title starts with "The", move to end of new title name
-                    if ($FolderSplit[0] -eq "The")
-                    {
-                        for ($i=1; $i -lt $element; $i++)
-                        {
-                            $NewName += $FolderSplit[$i] + " "
-                        }
-                        $NewName = $NewName.TrimEnd(" ")
-                        $NewName += ", The "
-                    }
-                    else
-                    {
-                        for ($i=0; $i -lt $element; $i++)
-                        {
-                            $NewName += $FolderSplit[$i] + " "
-                        }
-                    }
-                    # Add year to end of new string
-                    $NewName += $Year
-
-                    # Fix common issues
-                    $NewName = $NewName -creplace (" Of "," of ")
-                    $NewName = $NewName -replace (" Mr "," Mr. ")
-                    $NewName = $NewName -replace (" Mrs "," Mrs. ")
-                    $NewName = $NewName -replace ("Mr ","Mr. ")
-                    $NewName = $NewName -replace ("Mrs ","Mrs. ")
-                    Write-Verbose "NewName: $NewName"
+                    Write-Host "Found expected string after identified year: $($FolderSplit[$a+1])" -ForegroundColor Green
+                    $ConfirmedYearMatch = $CurrentString
                     $a=100
                 }
                 else
                 {
-                    Write-Verbose "Did NOT find expected string after identified year: $($FolderSplit[$a+1])"
-                    Write-Verbose "Continuing to parse through movie folder name"
+                    Write-Host "Did NOT find expected string after identified year: $($FolderSplit[$a+1])" -ForegroundColor Yellow
+                    Write-Host "Continuing to parse through movie folder name" -ForegroundColor Yellow
                 }
             }
             else
             {
-                Write-Verbose "String `"$CurrentString`" does NOT match regex `"$YearRegex`""
+                Write-Host "String `"$CurrentString`" does NOT match regex `"$YearRegex`"" -ForegroundColor Yellow
             }
         }
+        
+        # Finalize correct year
+        if ($ConfirmedYearMatch)
+        {
+            $FinalYearMatch = $ConfirmedYearMatch
+            Write-Host "Using confirmed year match: ($ConfirmedYearMatch)" -ForegroundColor Yellow
+        }
+        elseif ($ProvisionalYearMatch)
+        {
+            $FinalYearMatch = $ProvisionalYearMatch
+            Write-Host "Using provisional year match: ($ProvisionalYearMatch)" -ForegroundColor Yellow
+        }
+
+        ### Get new name using identified year string
+
+        #Remove all non-digit characters from string, add parentheses
+        $Year = $FinalYearMatch -replace '[\D]', ''
+        $Year = $Year -replace "$Year", "($Year)"
+
+        Write-Host "Final year string: $year" -ForegroundColor Blue
+        $Element = [array]::indexof($FolderSplit,$FinalYearMatch)
+
+        #If movie title starts with "The", move to end of new title name
+        if ($FolderSplit[0] -eq "The")
+        {
+            for ($i=1; $i -lt $element; $i++)
+            {
+                $NewName += $FolderSplit[$i] + " "
+            }
+            $NewName = $NewName.TrimEnd(" ")
+            $NewName += ", The "
+        }
+        else
+        {
+            for ($i=0; $i -lt $element; $i++)
+            {
+                $NewName += $FolderSplit[$i] + " "
+            }
+        }
+        # Add year to end of new string
+        $NewName += $Year
+
+        # Fix common issues
+        $NewName = $NewName -creplace (" Of "," of ")
+        $NewName = $NewName -replace (" Mr "," Mr. ")
+        $NewName = $NewName -replace (" Mrs "," Mrs. ")
+        $NewName = $NewName -replace ("Mr ","Mr. ")
+        $NewName = $NewName -replace ("Mrs ","Mrs. ")
+        Write-Host "NewName: $NewName" -ForegroundColor Blue
     }
     
     end
@@ -136,11 +152,13 @@ function Get-NewMovieName {
 # Main
 ###################################
 
+Write-Host "Test mode: $Test" -ForegroundColor Yellow
+
 #Get all subfolders from target folder
 foreach ($MovieFolder in (Get-ChildItem $DownloadsDirectory))
 {
-    Write-Output "------------------"
-    Write-Output "Folder: $($MovieFolder.name)"
+    Write-Host "------------------"
+    Write-Host "Folder: $($MovieFolder.name)"
     
     #Set variables to empty
     $TempFolderName = ""
@@ -165,7 +183,7 @@ foreach ($MovieFolder in (Get-ChildItem $DownloadsDirectory))
         ($MovieFolder.Name -notlike "*ATVP*") -and
         ($MovieFolder.Name -notlike "*AMZN*"))
     {
-        Write-Warning "Folder appears to already be renamed, moving on..."
+        Write-Host "Folder appears to already be renamed, moving on..." -ForegroundColor Yellow
         continue
     }
     else
@@ -173,11 +191,11 @@ foreach ($MovieFolder in (Get-ChildItem $DownloadsDirectory))
         try
         {
             $NewName = Get-NewMovieName -OriginalMovieString $MovieFolder.Name -ErrorAction Stop
-            Write-Output "Final movie name: $NewName"
+            Write-Host "Final movie name: $NewName" -ForegroundColor Blue
         }
         catch
         {
-            Write-Warning "New movie name could not be determined"
+            Write-Host "New movie name could not be determined" -ForegroundColor Red
             $Answer = Read-Host "Continue?"
             if ($Answer -match [Yy]) { Continue }
             else { exit }
@@ -195,7 +213,7 @@ foreach ($MovieFolder in (Get-ChildItem $DownloadsDirectory))
     $MovieChildItems = Get-ChildItem -LiteralPath $MovieFolder.FullName
     foreach ($MovieChildItem in $MovieChildItems)
     {
-        Write-Output "Parsing item: `"$($MovieChildItem.name)`""
+        Write-Host "Parsing item: `"$($MovieChildItem.name)`"" -ForegroundColor Yellow
         if ($MovieChildItem.PSIsContainer -eq $false)
         {
             #Delete .TXT .EXE .NFO files
@@ -203,15 +221,15 @@ foreach ($MovieFolder in (Get-ChildItem $DownloadsDirectory))
                 ($MovieChildItem.name -like "*.exe") -or
                 ($MovieChildItem.name -like "*.txt"))
             {
-                Write-Output "Removing file: `"$($MovieChildItem.name)`""
+                Write-Host "Removing file: `"$($MovieChildItem.name)`"" -ForegroundColor Yellow
                 try
                 {
                     Remove-Item -LiteralPath $MovieChildItem.fullname -Force -ErrorAction Stop -WhatIf:$Test
-                    Write-Output "Successfully removed file: `"$($MovieChildItem.name)`""
+                    Write-Host "Successfully removed file: `"$($MovieChildItem.name)`"" -ForegroundColor Green
                 }
                 catch
                 {
-                    Write-Warning "Failed to remove: `"$($MovieChildItem.name)`""
+                    Write-Host "Failed to remove: `"$($MovieChildItem.name)`"" -ForegroundColor Red
                 }
             }
 
@@ -224,41 +242,41 @@ foreach ($MovieFolder in (Get-ChildItem $DownloadsDirectory))
                     ($MovieChildItem.name -like "*.com") -or
                     ($MovieChildItem.name -like "*.sub"))
             {
-                Write-Output "Renaming file: `"$($MovieChildItem.name)`""
+                Write-Host "Renaming file: `"$($MovieChildItem.name)`"" -ForegroundColor Yellow
                 $FileExt = $MovieChildItem.name.split('.')[-1]
                 $NewSubItemName = $NewName + "." + $FileExt
-                Write-Output "New file name: $NewSubItemName"
+                Write-Host "New file name: $NewSubItemName"
                 try
                 {
                     Rename-Item -LiteralPath $MovieChildItem.fullname -NewName $NewSubItemName -ErrorAction Stop -WhatIf:$Test
-                    Write-Output "Successfully renamed file: `"$($MovieChildItem.name)`""
+                    Write-Host "Successfully renamed file: `"$($MovieChildItem.name)`"" -ForegroundColor Green
                 }
                 catch
                 {
-                    Write-Warning "Failure renaming file: `"$($MovieChildItem.name)`""
+                    Write-Host "Failure renaming file: `"$($MovieChildItem.name)`"" -ForegroundColor Red
                 }
                 #Verify file rename
                 finally
                 {
-                    Write-Output "Verifying file rename: `"$($MovieChildItem.name)`"..."
+                    Write-Host "Verifying file rename: `"$($MovieChildItem.name)`"..."
                     if (Test-Path -LiteralPath $MovieChildItem.FullName)
                     {
-                        Write-Warning "Old file name detected"
-                        Write-Warning "Re-attempting file rename"
+                        Write-Host "Old file name detected" -ForegroundColor Red
+                        Write-Host "Re-attempting file rename" -ForegroundColor Red
                         $NewFullPath = Join-Path -Path $MovieChildItem.DirectoryName -ChildPath $NewSubItemName
                         try
                         {
                             Move-Item -LiteralPath $MovieChildItem.fullname -Destination $NewFullPath -ErrorAction Stop -WhatIf:$Test
-                            Write-Output "Successfully renamed file: `"$($MovieChildItem.name)`""
+                            Write-Host "Successfully renamed file: `"$($MovieChildItem.name)`"" -ForegroundColor Green
                         }
                         catch
                         {
-                            Write-Warning "Failure renaming file: `"$($MovieChildItem.name)`""
+                            Write-Host "Failure renaming file: `"$($MovieChildItem.name)`"" -ForegroundColor Red
                         }
                     }
                     elseif (Test-Path -LiteralPath "$($MovieFolder.FullName)\$NewSubItemName")
                     {
-                        Write-Output "File rename verified: `"$NewSubItemName`""
+                        Write-Host "File rename verified: `"$NewSubItemName`"" -ForegroundColor Green
                     }
                 }
             }
@@ -269,7 +287,7 @@ foreach ($MovieFolder in (Get-ChildItem $DownloadsDirectory))
         {
             if ($MovieChildItem.Name -eq "Subs")
             {
-                Write-Output "Subtitle folder found!"
+                Write-Host "Subtitle folder found!" -ForegroundColor Blue
                 $SubsFolder = Get-ChildItem $MovieChildItem.fullname
                 foreach ($SubtitleFile in $SubsFolder)
                 {
@@ -281,55 +299,55 @@ foreach ($MovieFolder in (Get-ChildItem $DownloadsDirectory))
                             if ($SRTDone -eq $false)
                             {
                                 $NewSubtitleFileName = $SubtitleFile.Name.Replace($SubtitleFile.Name,$NewName)
-                                Write-Output "Moving sub file to movie folder: `"$($SubtitleFile.Name)`""
-                                Write-Output "New path: $($MovieFolder.fullname)\$NewSubtitleFileName.$Ext"
+                                Write-Host "Moving sub file to movie folder: `"$($SubtitleFile.Name)`"" -ForegroundColor Yellow
+                                Write-Host "New path: $($MovieFolder.fullname)\$NewSubtitleFileName.$Ext" -ForegroundColor Yellow
                                 Move-Item -LiteralPath $SubtitleFile.fullname -Destination "$($MovieFolder.fullname)\$NewSubtitleFileName.$Ext" -WhatIf:$Test
                                 $SRTDone = $true
                             }
                             else
                             {
-                                Write-Output "Duplicate English .SRT sub file found"
-                                Write-Output "Removing subtitle file: `"$($SubtitleFile.Name)`""
+                                Write-Host "Duplicate English .SRT sub file found" -ForegroundColor Yellow
+                                Write-Host "Removing subtitle file: `"$($SubtitleFile.Name)`"" -ForegroundColor Yellow
                                 Remove-Item -LiteralPath $SubtitleFile.FullName -Force -WhatIf:$Test
                             }
                         }
                         else
                         {
-                            Write-Output "Sub file: `"$($SubtitleFile.FullName)`""
-                            Write-Output "Sub file name does not contain ENG string, so we delete it"
+                            Write-Host "Sub file: `"$($SubtitleFile.FullName)`"" -ForegroundColor Yellow
+                            Write-Host "Sub file name does not contain ENG string, so we delete it" -ForegroundColor Yellow
                             Remove-Item -LiteralPath $SubtitleFile.FullName -Force -WhatIf:$Test
                         }
                     }
                     else
                     {
                         $NewSubtitleFileName = $SubtitleFile.Name.Replace($SubtitleFile.Name,$NewName)
-                        Write-Output "Moving subtitle file: `"$($SubtitleFile.FullName)`""
-                        Write-Output "New path: $($MovieFolder.fullname)\$NewSubtitleFileName.$Ext"
+                        Write-Host "Moving subtitle file: `"$($SubtitleFile.FullName)`"" -ForegroundColor Yellow
+                        Write-Host "New path: $($MovieFolder.fullname)\$NewSubtitleFileName.$Ext" -ForegroundColor Yellow
                         Move-Item -LiteralPath $SubtitleFile.fullname -Destination "$($MovieFolder.fullname)\$NewSubtitleFileName.$Ext" -WhatIf:$Test
                     }
                 }
                 #Delete Subs folder
-                Write-Output "Removing folder: `"$($MovieChildItem.FullName)`" folder"
+                Write-Host "Removing folder: `"$($MovieChildItem.FullName)`" folder" -ForegroundColor Yellow
                 Remove-Item -LiteralPath $MovieChildItem.FullName -Recurse -Force -WhatIf:$Test
             }
             else
             {
-                Write-Output "Removing folder: `"$($MovieChildItem.FullName)`" folder"
+                Write-Host "Removing folder: `"$($MovieChildItem.FullName)`" folder" -ForegroundColor Yellow
                 Remove-Item -LiteralPath $MovieChildItem.FullName -Recurse -Force -WhatIf:$Test
             }
         }
     }
     #Rename target folder
-    Write-Output "Renaming folder: `"$($MovieFolder.Name)`""
-    Write-Output "New folder name: `"$NewFolderName`""
+    Write-Host "Renaming folder: `"$($MovieFolder.Name)`"" -ForegroundColor Yellow
+    Write-Host "New folder name: `"$NewFolderName`""
     try
     {
         Rename-Item -LiteralPath $MovieFolder.FullName -NewName $NewFolderName -ErrorAction Stop -WhatIf:$Test
-        Write-Output "Successfully renamed movie folder"
+        Write-Host "Successfully renamed movie folder" -ForegroundColor Green
     }
     catch
     {
-        Write-Warning "Failed to rename movie folder"
+        Write-Host "Failed to rename movie folder" -ForegroundColor Red
         $error[0]
     }
 }
