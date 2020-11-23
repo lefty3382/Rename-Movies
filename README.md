@@ -11,6 +11,10 @@ The renaming process is based primarily on identifying the year (1900-2099) of t
 
 A local or network directory containing movie files, each movie file(s) is expected to be in its own subfolder.
 
+* Test
+
+Test switch.  No file changes are made but all console output is retained.
+
 #### Examples
 
 ```PowerShell
