@@ -9,12 +9,18 @@ The renaming process is based primarily on identifying the year (1900-2099) of t
 ### Script parameters
 * DownloadsDirectory
 
-
 A local or network directory containing movie files, each movie file(s) is expected to be in its own subfolder.
 
-#### Example
-`.\Rename-Movies.ps1 -DownloadsDirectory D:\MovieDownloads`
+#### Examples
 
+```PowerShell
+.\Rename-Movies.ps1 -DownloadsDirectory D:\MovieDownloads -Test
+```
+This example executes the command with the Test switch, no file changes are made but all console output is retained.
+
+```PowerShell
+.\Rename-Movies.ps1 -DownloadsDirectory D:\MovieDownloads
+```
 This example assumes the following directory structure under "D:\MovieDownloads".
 
 * D:\MovieDownloads\American.Pastime.2007.1080p.WEBRip.x265-EXAMPLE
