@@ -17,8 +17,8 @@ param (
         Mandatory = $false,
         Position = 0)]
     #[ValidatePattern("(?i)^(Z:|\\\\192\.168\.0\.64\\storage)\\Film\\_New\\.{1,200}$")]
-    [ValidateScript({(Get-ChildItem "\\192.168.0.64\storage\Film\_New" | Select-Object -ExpandProperty FullName) -contains $_})]
-    [string]$DownloadsDirectory = "\\192.168.0.64\storage\Film\_New\Bluray",
+    [ValidateScript({(Get-ChildItem "\\192.168.10.2\storage\Film\_New" | Select-Object -ExpandProperty FullName) -contains $_})]
+    [string]$DownloadsDirectory = "\\192.168.10.2\storage\Film\_New\Bluray",
 
     # Test switch, no changes enforced but all console output is displayed
     [Parameter(
@@ -27,7 +27,7 @@ param (
     [switch]$Test = $false
 )
 
-#ScriptVersion = "1.0.6.3"
+#ScriptVersion = "1.0.6.4"
 
 ###################################
 # Script Variables
