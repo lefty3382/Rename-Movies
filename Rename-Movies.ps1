@@ -24,10 +24,16 @@ param (
     [Parameter(
         Mandatory = $false,
         Position = 1)]
-    [switch]$Test = $false
+    [switch]$Test = $false,
+
+    # If movie title starts with "The", move it to the end of the title after a comma
+    [Parameter(
+        Mandatory = $false,
+        Position = 2)]
+    [switch]$PutTheAtTheEnd = $false
 )
 
-#ScriptVersion = "1.0.6.5"
+#ScriptVersion = "1.0.7.0"
 
 ###################################
 # Script Variables
@@ -114,7 +120,7 @@ function Get-NewMovieName {
         $Element = [array]::indexof($FolderSplit,$FinalYearMatch)
 
         #If movie title starts with "The", move to end of new title name
-        if ($FolderSplit[0] -eq "The")
+        if (($FolderSplit[0] -eq "The") -and ($PutTheAtTheEnd))
         {
             for ($i=1; $i -lt $element; $i++)
             {
@@ -130,6 +136,7 @@ function Get-NewMovieName {
                 $NewName += $FolderSplit[$i] + " "
             }
         }
+
         # Add year to end of new string
         $NewName += $Year
 
