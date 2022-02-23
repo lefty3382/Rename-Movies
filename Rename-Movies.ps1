@@ -15,7 +15,8 @@
 param (
     [Parameter(
         Mandatory = $false,
-        Position = 0)]
+        Position = 0,
+        HelpMessage = "Path must contain '\\192.168.10.2\storage\Film\_New'")]
     #[ValidatePattern("(?i)^(Z:|\\\\192\.168\.0\.64\\storage)\\Film\\_New\\.{1,200}$")]
     [ValidateScript({(Get-ChildItem "\\192.168.10.2\storage\Film\_New" | Select-Object -ExpandProperty FullName) -contains $_})]
     [string]$DownloadsDirectory = "\\192.168.10.2\storage\Film\_New\HD",
@@ -33,7 +34,7 @@ param (
     [switch]$PutTheAtTheEnd = $false
 )
 
-#ScriptVersion = "1.0.7.0"
+#ScriptVersion = "1.0.7.1"
 
 ###################################
 # Script Variables
@@ -213,7 +214,7 @@ foreach ($MovieFolder in (Get-ChildItem $DownloadsDirectory))
     # If 4K movie, add 4K to end of new name for files
     if ($MovieFolder.Name -like "*.2160p.*")
     {
-        $NewName = $NewName + " - 4K"
+        $NewName = $NewName + " - UHD"
     }
 
     #Get child items in target folder
